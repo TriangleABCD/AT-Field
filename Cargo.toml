@@ -1,0 +1,13 @@
+[package]
+name = "atfield"
+version = "0.1.0"
+edition = "2024"
+license = "Apache-2.0"
+publish = false
+description = "AT Field — Attested Trust Field (可证信任场): a PMP-based RISC-V TSM"
+
+[workspace]
+members = []          # 同级 crate 成熟后逐个加入
+resolver = "3"
+
+[dependencies]
