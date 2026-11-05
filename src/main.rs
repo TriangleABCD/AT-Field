@@ -10,6 +10,9 @@
 #![no_std]
 #![no_main]
 
+mod console;
+mod uart;
+
 use core::arch::global_asm;
 use core::panic::PanicInfo;
 
@@ -37,6 +40,14 @@ pub extern "C" fn _primary_main(hart_id: u64, fdt_addr: u64) -> ! {
 ///
 /// 目前是空的。下一步依次是：解析 FDT、接管 `mtvec`、建立机密内存布局。
 fn primary_main(_hart_id: u64, _fdt_addr: u64) -> Result<(), Error> {
+    // 控制台：先绑板级默认地址，等 FDT 解析就绪后改为从设备树读取。
+    uart::UART0.bind(uart::QEMU_VIRT_UART0);
+    uart::UART0.init();
+    console::install(&uart::UART0);
+
+    crate::println!("AT Field: console up (base={:#x})", uart::QEMU_VIRT_UART0);
+    crate::println!("  print! / println! with core::fmt formatting: {}", 42);
+
     Ok(())
 }
 
