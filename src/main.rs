@@ -18,12 +18,10 @@ mod uart;
 use core::arch::global_asm;
 use core::panic::PanicInfo;
 
-/// 每个 hart 分到的栈大小。`.stack` 区共 128 KiB，按 8 个 hart 切分。
-/// 这个常量同时传给 `start.S`（汇编里用它计算 `sp`）。
-const STACK_PER_HART: usize = 0x4000; // 16 KiB
-
-// 被调用的入口：保存调用者上下文 → 换环境 → call atf_hart_init → 恢复 → ret
-global_asm!(include_str!("start.S"), STACK_PER_HART = const STACK_PER_HART);
+// 被调用的入口：保存调用者上下文 → 换环境 → call atf_hart_init → 恢复 → ret。
+// 每 hart 的栈大小由 start.S 的 `STACK_PER_HART` 决定，linker.ld 里的 ASSERT
+// 保证栈区正好切成 8 份。
+global_asm!(include_str!("start.S"));
 
 /// 由宿主固件调用的每 hart 初始化入口。
 ///

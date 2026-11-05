@@ -58,4 +58,8 @@ SECTIONS
 
     /* 编译期护栏：入口必须是机密半区的第一个字节，宿主固件才敢按常量跳。 */
     ASSERT(_start == 0x100000000, "AT Field entry must sit at 0x1_0000_0000")
+
+    /* 栈区必须正好是 start.S 里 STACK_PER_HART(0x4000) 的 8 倍。 */
+    ASSERT(_stack_top - _stack_bottom == 8 * 0x4000,
+           "stack region must be 8 * STACK_PER_HART (0x20000)")
 }

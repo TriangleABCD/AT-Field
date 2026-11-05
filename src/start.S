@@ -15,6 +15,8 @@
 # 因此注释统一用汇编的 `#` 风格（LLVM 的 RISC-V 汇编器不认 `/* */`）。
 
 .attribute arch, "rv64gc"   # 声明 ISA，汇编器才放行 mul 等 M 扩展指令
+
+.equ STACK_PER_HART, 0x4000    # 每 hart 栈 16 KiB；与 linker.ld 的栈区大小由 ASSERT 绑定
 .option norvc
 
 .section .text.entry
@@ -38,7 +40,7 @@ _start:
     la   gp, __global_pointer$
 .option pop
     la   sp, _stack_top
-    li   t2, {STACK_PER_HART}   # 由 global_asm! 的命名参数替换
+    li   t2, STACK_PER_HART
     andi t3, a0, 7
     mul  t3, t3, t2
     sub  sp, sp, t3             # 每 hart 一段栈，避免并发调用互相踩踏
