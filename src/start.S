@@ -4,6 +4,7 @@
 #
 # 调用约定（宿主固件侧遵守）：
 #   a0 = hartid
+#   a1 = 角色：0 = boot hart（primary），1 = 其它 hart（secondary）
 #   ra = 返回地址
 #   sp / gp = 调用者的，AT Field 必须原样还回去
 #
@@ -45,10 +46,16 @@ _start:
     mul  t3, t3, t2
     sub  sp, sp, t3             # 每 hart 一段栈，避免并发调用互相踩踏
 
-    # 3. 进入 Rust（a0 = hartid 原样传下去）
-    call atf_hart_init
+    # 3. 按角色分派到两个 Rust 入口（a0 = hartid 原样传下去）
+    bnez a1, .Lsecondary_entry
+.Lprimary_entry:
+    call _primary_main
+    j    .Lepilogue
+.Lsecondary_entry:
+    call _secondary_main
 
     # 4. 原样还回调用者环境并返回
+.Lepilogue:
     ld   ra, 0(s0)
     ld   sp, 8(s0)
     ld   gp, 16(s0)

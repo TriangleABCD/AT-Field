@@ -12,4 +12,4 @@ resolver = "3"
 
 [dependencies]
 # 无锁 once-cell（启动期安装 console 后端用）；后续 hart/TVM 状态也会需要
-spin = { version = "0.12", default-features = false, features = ["once"] }
+spin = { version = "0.12", default-features = false, features = ["once", "mutex", "spin_mutex"] }

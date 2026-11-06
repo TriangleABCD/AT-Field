@@ -27,6 +27,12 @@ static NULL_SINK: NullSink = NullSink;
 /// 已安装的后端。用 `Once` 而不是 `static mut`：无 unsafe，且天然只写一次。
 static SLOT: spin::Once<&'static dyn Sink> = spin::Once::new();
 
+/// 串口只有一份，多 hart 并发打印会按字节交错；这把锁把**整条格式化输出**圈起来。
+///
+/// TODO(trap): 接管 `mtvec` 之后，如果 trap 处理路径里也要打印，自旋会死锁；
+/// 届时应改成 `try_lock` + 降级输出（或专门的 trap 输出通道）。
+static PRINT_LOCK: spin::Mutex<()> = spin::Mutex::new(());
+
 /// 安装后端驱动。**只有第一次调用生效**，重复调用被忽略。
 pub fn install(sink: &'static dyn Sink) {
     SLOT.call_once(|| sink);
@@ -58,6 +64,8 @@ impl Write for Writer {
 
 #[doc(hidden)]
 pub fn _print(args: fmt::Arguments<'_>) {
+    // 锁整条消息（而不是锁单个字节），否则两个 hart 的片段仍会交错。
+    let _guard = PRINT_LOCK.lock();
     let _ = Writer { sink: current() }.write_fmt(args);
 }
 
