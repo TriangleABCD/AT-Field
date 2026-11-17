@@ -94,7 +94,9 @@ fn primary_main(hart_id: usize, fdt: usize) -> Result<(), Error> {
 ///
 /// 开：验证 `L=1` 条目对 **M 模式** 也生效（这才是“TSM 自己也改不回来”的证据），
 /// 代价是**不再返回固件**——所以这一版看不到 `AT Field returned control`。
-const PMP_SELF_TEST: bool = true;
+/// 先关掉：开着会在自检 trap 处停机，固件就永远走不到 S 态（longinus）。
+/// 需要重新验“写代码区必 fault”时再打开。
+const PMP_SELF_TEST: bool = false;
 
 /// 每 hart 初始化：per-hart 状态、per-hart PMP 条目……
 ///

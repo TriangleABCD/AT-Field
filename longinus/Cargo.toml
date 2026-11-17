@@ -1,0 +1,18 @@
+[package]
+name = "longinus"
+version = "0.1.0"
+edition = "2024"
+license = "Apache-2.0"
+publish = false
+description = "Longinus — an S-mode test workload that probes the AT Field TSM"
+
+# 独立的 workspace 根：`AT-Field/Cargo.toml` 是另一个 workspace 根，而它没有
+# 把本 crate 列为成员的意图（两者链接脚本不同、构建方式也不同）。
+[workspace]
+
+[[bin]]
+name = "longinus"
+path = "src/main.rs"
+
+[dependencies]
+# 目前不需要任何依赖：打印直接写 NS16550 的 MMIO，SBI 调用以后要用时再抽。
