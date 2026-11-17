@@ -7,7 +7,8 @@
  *
  * Symbols consumed by src/start.S:
  *   __global_pointer$  gp, 0x800 past the start of .sdata/.data
- *   _bss_start/_bss_end  区域必须 8 字节对齐（用 sd 清零）
+ *   _bss_start/_bss_end  区域必须 8 字节对齐（main.rs 的 clear_bss_once() 按
+ *                        8 字节写零）
  *   _stack_top        初始 sp（栈向下生长）
  */
 
@@ -44,6 +45,17 @@ SECTIONS
         *(COMMON)
         . = ALIGN(8);
         PROVIDE(_bss_end = .);
+    }
+
+    /* 每 hart 的调用者上下文保存槽（内容由 start.S 的 `HF_SAVE` 定义）。
+     *
+     * **单独成段且 NOLOAD，不能放进 .bss**：primary 阶段要清零 .bss，而这里
+     * 存着**当前 hart 正在用的** ra/sp/gp/s0——混进 .bss 的话，一清就把自己的
+     * 返回路径抹掉，`ret` 会跳到 0。 */
+    .hart_save (NOLOAD) : {
+        . = ALIGN(8);
+        *(.hart_save)
+        . = ALIGN(8);
     }
 
     /* 每 hart 的栈区：128 KiB，按 16 KiB 切给 8 个 hart（见 start.S 的
