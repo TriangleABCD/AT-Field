@@ -15,6 +15,8 @@
 
 mod console;
 mod fdt;
+mod pmp;
+mod trap;
 mod uart;
 
 use core::arch::global_asm;
@@ -25,6 +27,8 @@ use core::sync::atomic::{AtomicU8, Ordering};
 // 每 hart 的栈大小由 start.S 的 `STACK_PER_HART` 决定，linker.ld 里的 ASSERT
 // 保证栈区正好切成 8 份。
 global_asm!(include_str!("start.S"));
+// M 模式 trap 向量（`mtvec` 的 direct 模式入口）。现在是观测层：打印后停机。
+global_asm!(include_str!("trap.S"));
 
 /// 汇编 → Rust 的接缝（boot hart）。
 ///
@@ -58,14 +62,39 @@ pub extern "C" fn _secondary_main(hart_id: usize, fdt: usize) {
     }
 }
 
-/// 全局（一次性）初始化：内存布局、PMP 基线、全局表……
+/// 全局（一次性）初始化：内存布局、PMP、全局表……
 ///
-/// 目前只有打印 + FDT 头握手。之后这里会做"只允许做一次"的事。
+/// 目前：打印 + FDT 头握手 → 读旧 PMP 配置 → 装新链 → 对账 → 写保护自检。
 fn primary_main(hart_id: usize, fdt: usize) -> Result<(), Error> {
     crate::println!("\x1b[31mHART {}: AT Field init (primary)\x1b[0m", hart_id);
     fdt::report(fdt);
+
+    // 先装临时向量，再动任何 CSR/条目：万一 `mseccfg` 不存在或配置写坏，
+    // 能打印出原因而不是整机卡死。
+    let saved_mtvec = trap::install();
+
+    crate::println!("--- PMP: 装入前的配置（固件铺的） ---");
+    pmp::report();
+
+    pmp::install();
+
+    crate::println!("--- PMP: 装入后的配置 ---");
+    pmp::report();
+
+    if PMP_SELF_TEST {
+        // 向代码区（`L=1 RX`）写一字节：期望 store/AMO access fault。
+        trap::probe_write_to_code(pmp::confidential_start());
+    }
+    trap::restore(saved_mtvec);
+
     Ok(())
 }
+
+/// 装完 PMP 后是否跑一次“故意违例”自检。
+///
+/// 开：验证 `L=1` 条目对 **M 模式** 也生效（这才是“TSM 自己也改不回来”的证据），
+/// 代价是**不再返回固件**——所以这一版看不到 `AT Field returned control`。
+const PMP_SELF_TEST: bool = true;
 
 /// 每 hart 初始化：per-hart 状态、per-hart PMP 条目……
 ///

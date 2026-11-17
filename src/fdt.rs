@@ -36,6 +36,9 @@ pub fn bind(address: usize) -> usize {
 }
 
 /// 已绑定的 FDT 地址；0 表示宿主固件没传。
+///
+/// 现在只有 [`bind`]/[`report`] 在用；FDT 树遍历（`init.rs`）会需要它，先留着。
+#[allow(dead_code)]
 pub fn address() -> usize {
     ADDRESS.load(Ordering::Relaxed)
 }
