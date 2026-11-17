@@ -1,5 +1,6 @@
 [build]
 target = "riscv64gc-unknown-none-elf"
 
-[target.riscv64gc-unknown-none-elf]
-rustflags = ["-C", "link-arg=-Tlinker.ld", "-C", "link-arg=--no-relax"]
+# 说明：链接脚本**不在这里**指定。`[target.<triple>] rustflags` 是按目录继承的，
+# 写在这里会被子目录（如 longinus/）一并继承，而它们各有自己的链接脚本。
+# 各自的 build.rs 用 `cargo:rustc-link-arg=-T<自己的>.lds` 指定。

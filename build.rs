@@ -9,4 +9,10 @@ fn main() {
     println!("cargo:rerun-if-changed=linker.ld");
     println!("cargo:rerun-if-changed=src/start.S");
     println!("cargo:rerun-if-changed=src/trap.S");
+
+    // 链接脚本与链接选项放在这里而不是 `.cargo/config.toml`：config 里的
+    // `rustflags` 会按目录继承到子 crate（longinus/ 有自己的链接脚本），
+    // 两者的 `-T` 会打架。
+    println!("cargo:rustc-link-arg=-Tlinker.ld");
+    println!("cargo:rustc-link-arg=--no-relax");
 }
